@@ -1,0 +1,59 @@
+# Production stack for a single EC2 instance: app (MongoDB backend) + MongoDB + Redis + Caddy (HTTPS).
+# Run from the repo root on the instance:
+#   docker compose -f deploy/aws/docker-compose.prod.yml --env-file deploy/aws/.env up -d --build
+services:
+  app:
+    build: ../..
+    restart: unless-stopped
+    environment:
+      STORAGE: mongo
+      CACHE: "true"
+      ADMIN_TOKEN: ${ADMIN_TOKEN:?set ADMIN_TOKEN in deploy/aws/.env}
+      REDIS_HOST: redis
+      MONGO_URI: ${MONGO_URI:-mongodb://mongo:27017}
+    mem_limit: 768m
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru", "--save", "", "--appendonly", "no"]
+    mem_limit: 192m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 20
+
+  mongo:
+    image: mongo:8.0
+    restart: unless-stopped
+    command: ["mongod", "--wiredTigerCacheSizeGB", "0.25"]
+    mem_limit: 768m
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      retries: 30
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in deploy/aws/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      - app
+
+volumes:
+  mongodata:
+  caddy_data:

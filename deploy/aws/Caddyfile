@@ -1,0 +1,10 @@
+# Automatic HTTPS (Let's Encrypt) for $DOMAIN, proxying to the app.
+{$DOMAIN} {
+	encode gzip
+
+	# Operator endpoints are not exposed publicly; create keys over SSH (see deploy/aws/README.md).
+	@private path /admin/* /actuator/prometheus /actuator/metrics*
+	respond @private 404
+
+	reverse_proxy app:8080
+}

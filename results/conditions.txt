@@ -1,0 +1,4 @@
+date: 2026-11-15T10:01:22Z
+host: Darwin arm64, 10 CPUs
+rates: 1000 5000 | repeats: 1 | duration: 20s | warmup: 10s | skew exponent: 3 | seeded links: 100000
+limits: app 2 CPU/1 GB, postgres 2 CPU/1 GB, mongo 2 CPU/1 GB, redis 1 CPU/512 MB; k6 on the same host (unlimited)

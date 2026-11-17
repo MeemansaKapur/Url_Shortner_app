@@ -1,0 +1,10 @@
+target
+results
+loadtest
+deploy
+.git
+.github
+.idea
+.vscode
+*.md
+.DS_Store
